@@ -27,9 +27,56 @@ function render(){
  $('#counters').innerHTML=counters.map(c=>`<div class="counter-row" data-id="${c.id}"><input class="counter-name" aria-label="Counter name" value="${esc(c.name)}" data-field="name"><button class="step wide" data-action="minus10">−10</button><button class="step" data-action="minus">−</button><div class="count-value" aria-label="Current count">${c.current}</div><button class="step" data-action="plus">+</button><button class="step wide" data-action="plus10">+10</button><button class="icon-btn play" data-action="counter" aria-label="Start counter">${c.running?'Ⅱ':'▶'}</button><button class="icon-btn trash" data-action="delete" aria-label="Delete counter">${icons.trash}</button></div>`).join('');
 }
 let audio=null;
-function getAudio(){if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();return audio}
-function tone(freq=440,dur=.12,wave='sine',gain=.12,delay=0){let a=getAudio(),o=a.createOscillator(),g=a.createGain();o.type=wave;o.frequency.value=freq;g.gain.setValueAtTime(.0001,a.currentTime+delay);g.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),a.currentTime+delay+.012);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+delay+dur);o.connect(g);g.connect(a.destination);o.start(a.currentTime+delay);o.stop(a.currentTime+delay+dur+.02)}
-function noise(dur=.4,filter=1000,gain=.05){let a=getAudio(),n=Math.floor(a.sampleRate*dur),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;let src=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();src.buffer=b;f.type='lowpass';f.frequency.value=filter;g.gain.setValueAtTime(gain,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);src.connect(f);f.connect(g);g.connect(a.destination);src.start()}
+function getAudio(){
+ if(!audio){
+  const Ctx=window.AudioContext||window.webkitAudioContext;
+  if(!Ctx)throw new Error('Web Audio API is not supported in this browser.');
+  audio=new Ctx({latencyHint:'interactive'});
+ }
+ if(audio.state==='suspended') audio.resume().catch(()=>{});
+ return audio;
+}
+async function unlockAudio(){
+ try{
+  const a=getAudio();
+  if(a.state!=='running') await a.resume();
+  // A tiny, silent buffer unlocks audio output on iOS Safari after a user gesture.
+  const b=a.createBuffer(1,1,a.sampleRate),src=a.createBufferSource();
+  src.buffer=b;src.connect(a.destination);src.start();
+ }catch(err){console.warn('Audio could not be unlocked:',err)}
+}
+function tone(freq=440,dur=.12,wave='sine',gain=.12,delay=0){
+ let a=getAudio();
+ const schedule=()=>{
+  if(a.state!=='running')return;
+  let o=a.createOscillator(),g=a.createGain(),start=a.currentTime+delay;
+  o.type=wave;o.frequency.value=freq;
+  g.gain.setValueAtTime(.0001,start);
+  g.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),start+.012);
+  g.gain.exponentialRampToValueAtTime(.0001,start+dur);
+  o.connect(g);g.connect(a.destination);o.start(start);o.stop(start+dur+.02);
+ };
+ if(a.state==='running')schedule();else a.resume().then(schedule).catch(()=>{});
+}
+function noise(dur=.4,filter=1000,gain=.05){
+ let a=getAudio();
+ const schedule=()=>{
+  if(a.state!=='running')return;
+  let n=Math.floor(a.sampleRate*dur),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+  let src=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();
+  src.buffer=b;f.type='lowpass';f.frequency.value=filter;
+  g.gain.setValueAtTime(gain,a.currentTime);
+  g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+dur);
+  src.connect(f);f.connect(g);g.connect(a.destination);src.start();
+ };
+ if(a.state==='running')schedule();else a.resume().then(schedule).catch(()=>{});
+}
+// Prime/resume audio only in response to a real user gesture (required by Safari/Chrome).
+document.addEventListener('pointerdown',unlockAudio,{passive:true});
+document.addEventListener('keydown',unlockAudio);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&audio&&audio.state==='suspended')audio.resume().catch(()=>{})});
+window.addEventListener('pageshow',()=>{if(audio&&audio.state==='suspended')audio.resume().catch(()=>{})});
 function playSound(kind){switch(kind){case'click':tone(1800,.025,'square',.08);break;case'metronome':tone(1050,.045,'square',.08);break;case'beep':tone(880,.1,'sine',.09);break;case'wood':tone(420,.08,'triangle',.12);break;case'tingsha':tone(2400,.8,'sine',.11);tone(3100,.65,'sine',.06,.02);break;case'rainstick':noise(.9,2200,.08);break;case'bowl':tone(220,1.8,'sine',.13);tone(330,1.5,'sine',.06,.02);break;case'handpan':tone(330,.7,'sine',.12);tone(495,.6,'sine',.06,.06);break;case'rain':noise(1.8,1600,.025);break;case'river':noise(1.8,700,.035);break;case'birds':tone(1900,.13,'sine',.045);tone(2400,.16,'sine',.04,.16);tone(2100,.12,'sine',.04,.33);break}}
 function ensureLoop(){getAudio();if(!loop)loop=setInterval(tick,1000)}
 function tick(){timers.forEach(t=>{if(!t.running)return;t.remaining--;if(t.remaining<=0){playSound(t.sound);if(t.repeat)t.remaining=Math.max(1,t.min*60+t.sec);else t.running=false}});counters.forEach(c=>{if(!c.running)return;c.current++;playSound('click')});render();if(!timers.some(t=>t.running)&&!counters.some(c=>c.running)){clearInterval(loop);loop=null;$('#startAll').classList.remove('running')}}
@@ -42,5 +89,5 @@ $('#counters').addEventListener('change',e=>{let row=e.target.closest('.counter-
 $('#counters').addEventListener('click',e=>{let b=e.target.closest('button[data-action]');if(!b)return;let row=b.closest('.counter-row'),c=counters.find(x=>x.id==row.dataset.id);switch(b.dataset.action){case'delete':counters=counters.filter(x=>x!==c);render();break;case'minus10':c.current=Math.max(0,c.current-10);render();break;case'minus':c.current=Math.max(0,c.current-1);render();break;case'plus':c.current++;render();break;case'plus10':c.current+=10;render();break;case'counter':c.running?(c.running=false,render()):beginCounter(c);break}});
 $('#addTimer').onclick=()=>{timers.push({id:nextTimerId++,sound:'tingsha',min:5,sec:0,repeat:false,remaining:null,running:false});render()};
 $('#addCounter').onclick=()=>{counters.push({id:nextCounterId++,name:'Mantra '+nextCounterId,current:0,running:false});render()};
-$('#startAll').onclick=startAllTimers;render();
-</script></body></html></body></html>
+$('#startAll').onclick=()=>{unlockAudio();startAllTimers()};render();
+</script></body></html>
