@@ -141,7 +141,7 @@ body{background-color:#FEF4EA!important;background-image:radial-gradient(rgba(19
 <div id="counters"></div></section>
 <section class="panel calendar-panel" aria-labelledby="calendar-title">
 <div class="panel-head"><span class="head-icon">▦</span><h2 id="calendar-title">Practice Calendar</h2><span class="spacer"></span><button class="month-nav" id="prevMonth">‹</button><span id="monthLabel"></span><button class="month-nav" id="nextMonth">›</button></div>
-<div class="calendar-layout"><div id="calendar"></div><aside class="stats-card"><div class="stat">🌸　Today<strong id="todayTotal">0 min</strong></div><div class="stat">◷　This Month<strong id="monthTotal">0 h 0 min</strong></div><div class="stat">♨　Streak<strong id="streak">0 days</strong></div><div class="stat">∞　Total<strong id="allTotal">0 h 0 min</strong></div><div class="legend">
+<div class="calendar-layout"><div id="calendar"></div><aside class="stats-card"><div class="stat">Today<strong id="todayTotal">0 min</strong></div><div class="stat">This Month<strong id="monthTotal">0 h 0 min</strong></div><div class="stat">Streak<strong id="streak">0 days</strong></div><div class="stat">Total<strong id="allTotal">0 h 0 min</strong></div><div class="legend">
       <div><svg class="legend-lotus blue" viewBox="0 0 40 32" aria-hidden="true"><path d="M20 29C10 29 3 23 2 15c8 0 14 4 18 14Z M20 29c10 0 17-6 18-14-8 0-14 4-18 14Z M20 29C11 19 12 8 20 2c8 6 9 17 0 27Z M20 29C16 19 8 17 2 15 M20 29c4-10 12-12 18-14"/></svg><span>≥ 10 min</span></div>
       <div><svg class="legend-lotus purple" viewBox="0 0 40 32" aria-hidden="true"><path d="M20 29C10 29 3 23 2 15c8 0 14 4 18 14Z M20 29c10 0 17-6 18-14-8 0-14 4-18 14Z M20 29C11 19 12 8 20 2c8 6 9 17 0 27Z M20 29C16 19 8 17 2 15 M20 29c4-10 12-12 18-14"/></svg><span>≥ 30 min</span></div>
       <div><svg class="legend-lotus pink" viewBox="0 0 40 32" aria-hidden="true"><path d="M20 29C10 29 3 23 2 15c8 0 14 4 18 14Z M20 29c10 0 17-6 18-14-8 0-14 4-18 14Z M20 29C11 19 12 8 20 2c8 6 9 17 0 27Z M20 29C16 19 8 17 2 15 M20 29c4-10 12-12 18-14"/></svg><span>≥ 60 min</span></div>
@@ -152,19 +152,20 @@ body{background-color:#FEF4EA!important;background-image:radial-gradient(rgba(19
 <script>
 const $=s=>document.querySelector(s);
 const soundOptions=[['tingsha','Tingsha'],['bowl','Singing bowl'],['handpan','Handpan'],['rainstick','Rainstick'],['click','Click'],['metronome','Metronome'],['beep','Electronic'],['wood','Wood'],['rain','Rain'],['river','River'],['birds','Birdsong']];
-let timers=[{id:1,sound:'beep',min:0,sec:1,repeat:true,remaining:null,running:false},{id:2,sound:'tingsha',min:0,sec:10,repeat:true,remaining:null,running:false},{id:3,sound:'bowl',min:1,sec:0,repeat:true,remaining:null,running:false}];
+let timers=[{id:1,sound:'beep',min:0,sec:1,repeat:true,remaining:null,running:false},{id:2,sound:'bowl',min:0,sec:10,repeat:true,remaining:null,running:false},{id:3,sound:'tingsha',min:1,sec:0,repeat:true,remaining:null,running:false}];
 let counters=[
-{id:1,name:'Hari Om Tat Sat',goal:'21times',current:0,running:false},
-{id:2,name:'Vayavya',goal:'30min',current:0,running:false},
-{id:3,name:'Mantra - Guru Yoga',goal:'10min',current:0,running:false},
-{id:4,name:'Mantra - Vajrasattava',goal:'21times',current:0,running:false},
-{id:5,name:'Mantra - Avalokiteśvara',goal:'10min',current:0,running:false},
-{id:6,name:'Pañca-maṇḍala-praṇāma',goal:'60min',current:0,running:false},
-{id:7,name:'Meditation - Desanā',goal:'1000times',current:0,running:false}
+{id:1,name:'🧘 Vayavya',goal:'30min',current:0,running:false},
+{id:2,name:'🧘 五体投地',goal:'60min',current:0,running:false},
+{id:3,name:'🌸 Mnt - グルヨーガ',goal:'10min',current:0,running:false},
+{id:4,name:'🌸 Mnt - ヴァジラサットヴァ',goal:'21times',current:0,running:false},
+{id:5,name:'🌸 Mnt - 観音様',goal:'10min',current:0,running:false},
+{id:6,name:'🌸 懺悔の瞑想の詞章',goal:'1000times',current:0,running:false},
+{id:7,name:'🌙 Hari Om Tat Sat',goal:'21times',current:0,running:false},
+{id:8,name:'🌙 主よ、あなただけが実在です',goal:'21times',current:0,running:false}
 ];
 let nextTimerId=4,nextCounterId=8,loop=null;
 const HISTORY_KEY='meditationCounterHistoryV1';
-const STATE_KEY='meditationCounterStateV1';
+const STATE_KEY='meditationCounterStateV2';
 let practiceHistory={};
 try{practiceHistory=JSON.parse(localStorage.getItem(HISTORY_KEY)||'{}')}catch(e){practiceHistory={}}
 function dayKey(date=new Date()){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0')}
@@ -391,5 +392,19 @@ $('#startAll').onclick=()=>{unlockAudio();startAllTimers()};$('#stopAll').onclic
 @media(max-width:360px){
  .counter-info .counter-name{font-size:16.33px!important}
  .counter-info .practice-goal{font-size:14.33px!important}
+}
+</style>
+
+<style>
+/* Daily Practice typography: reduce 2pt */
+.counter-info .counter-name{font-size:18.33px!important}
+.counter-info .practice-goal{font-size:14.33px!important}
+@media(max-width:700px){
+ .counter-info .counter-name{font-size:16.33px!important}
+ .counter-info .practice-goal{font-size:13.33px!important}
+}
+@media(max-width:360px){
+ .counter-info .counter-name{font-size:14.33px!important}
+ .counter-info .practice-goal{font-size:12.33px!important}
 }
 </style>
