@@ -141,7 +141,11 @@ body{background-color:#FEF4EA!important;background-image:radial-gradient(rgba(19
 <div id="counters"></div></section>
 <section class="panel calendar-panel" aria-labelledby="calendar-title">
 <div class="panel-head"><span class="head-icon">▦</span><h2 id="calendar-title">Practice Calendar</h2><span class="spacer"></span><button class="month-nav" id="prevMonth">‹</button><span id="monthLabel"></span><button class="month-nav" id="nextMonth">›</button></div>
-<div class="calendar-layout"><div id="calendar"></div><aside class="stats-card"><div class="stat">🌸　Today<strong id="todayTotal">0 min</strong></div><div class="stat">◷　This Month<strong id="monthTotal">0 h 0 min</strong></div><div class="stat">♨　Streak<strong id="streak">0 days</strong></div><div class="stat">∞　Total<strong id="allTotal">0 h 0 min</strong></div><div class="legend">🔹　≥ 10 min<br>🪷　≥ 30 min<br>🌸　≥ 60 min</div></aside></div></section>
+<div class="calendar-layout"><div id="calendar"></div><aside class="stats-card"><div class="stat">🌸　Today<strong id="todayTotal">0 min</strong></div><div class="stat">◷　This Month<strong id="monthTotal">0 h 0 min</strong></div><div class="stat">♨　Streak<strong id="streak">0 days</strong></div><div class="stat">∞　Total<strong id="allTotal">0 h 0 min</strong></div><div class="legend">
+      <div><svg class="legend-lotus blue" viewBox="0 0 40 32" aria-hidden="true"><path d="M20 29C10 29 3 23 2 15c8 0 14 4 18 14Z M20 29c10 0 17-6 18-14-8 0-14 4-18 14Z M20 29C11 19 12 8 20 2c8 6 9 17 0 27Z M20 29C16 19 8 17 2 15 M20 29c4-10 12-12 18-14"/></svg><span>≥ 10 min</span></div>
+      <div><svg class="legend-lotus purple" viewBox="0 0 40 32" aria-hidden="true"><path d="M20 29C10 29 3 23 2 15c8 0 14 4 18 14Z M20 29c10 0 17-6 18-14-8 0-14 4-18 14Z M20 29C11 19 12 8 20 2c8 6 9 17 0 27Z M20 29C16 19 8 17 2 15 M20 29c4-10 12-12 18-14"/></svg><span>≥ 30 min</span></div>
+      <div><svg class="legend-lotus pink" viewBox="0 0 40 32" aria-hidden="true"><path d="M20 29C10 29 3 23 2 15c8 0 14 4 18 14Z M20 29c10 0 17-6 18-14-8 0-14 4-18 14Z M20 29C11 19 12 8 20 2c8 6 9 17 0 27Z M20 29C16 19 8 17 2 15 M20 29c4-10 12-12 18-14"/></svg><span>≥ 60 min</span></div>
+    </div></aside></div></section>
 <section class="quote-section"><div class="quote-copy"><div id="quoteOriginal" class="quote-original"></div><div id="quoteRoman" class="quote-roman"></div><p id="quoteJapanese" class="quote-japanese"></p><small id="quoteSource" class="quote-source"></small></div></section>
 <p class="hint">Time and Daily Practice run independently. Sound is selected for each timer.</p><div class="footer">✧　❀　✧</div>
 </main>
@@ -205,7 +209,7 @@ function renderCalendar(){
  for(let d=1;d<=days;d++){
   const key=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),mins=Math.floor((practiceHistory[key]||0)/60);
   const color=mins>=60?'pink':mins>=30?'purple':mins>=10?'blue':'';
-  s+='<div class="day"><span>'+d+'</span><span class="lotus-mark '+color+'">'+(mins?'❀':'')+'</span></div>';
+  s+='<div class="day"><span>'+d+'</span><span class="lotus-mark '+color+'">'+(mins?'<svg viewBox="0 0 40 32" aria-hidden="true"><path d="M20 29C10 29 3 23 2 15c8 0 14 4 18 14Z M20 29c10 0 17-6 18-14-8 0-14 4-18 14Z M20 29C11 19 12 8 20 2c8 6 9 17 0 27Z M20 29C16 19 8 17 2 15 M20 29c4-10 12-12 18-14"/></svg>':'')+'</span></div>';
  }
  document.getElementById('calendar').innerHTML=s+'</div>';
  updatePracticeStats();
@@ -277,8 +281,38 @@ document.addEventListener('keydown',unlockAudio);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&audio&&audio.state==='suspended')audio.resume().catch(()=>{})});
 window.addEventListener('pageshow',()=>{if(audio&&audio.state==='suspended')audio.resume().catch(()=>{})});
 function playSound(kind){switch(kind){case'click':tone(1800,.025,'square',.08);break;case'metronome':tone(1050,.045,'square',.08);break;case'beep':tone(880,.1,'sine',.09);break;case'wood':tone(420,.08,'triangle',.12);break;case'tingsha':tone(2400,.8,'sine',.11);tone(3100,.65,'sine',.06,.02);break;case'rainstick':noise(.9,2200,.08);break;case'bowl':tone(220,1.8,'sine',.13);tone(330,1.5,'sine',.06,.02);break;case'handpan':tone(330,.7,'sine',.12);tone(495,.6,'sine',.06,.06);break;case'rain':noise(1.8,1600,.025);break;case'river':noise(1.8,700,.035);break;case'birds':tone(1900,.13,'sine',.045);tone(2400,.16,'sine',.04,.16);tone(2100,.12,'sine',.04,.33);break}}
-function ensureLoop(){getAudio();if(!loop)loop=setInterval(tick,1000)}
-function tick(){timers.forEach(t=>{if(!t.running)return;t.remaining--;if(t.remaining<=0){playSound(t.sound);if(t.repeat)t.remaining=Math.max(1,t.min*60+t.sec);else t.running=false}});render();if(!timers.some(t=>t.running)){clearInterval(loop);loop=null;$('#startAll').classList.remove('running')}}
+
+let screenWakeLock=null;
+async function requestScreenWakeLock(){
+ if(!('wakeLock' in navigator) || document.visibilityState!=='visible') return;
+ try{
+   if(screenWakeLock && !screenWakeLock.released) return;
+   screenWakeLock=await navigator.wakeLock.request('screen');
+   screenWakeLock.addEventListener('release',()=>{screenWakeLock=null});
+ }catch(err){console.info('Screen Wake Lock unavailable:',err)}
+}
+function releaseScreenWakeLock(){
+ if(screenWakeLock){screenWakeLock.release().catch(()=>{});screenWakeLock=null}
+}
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible') requestScreenWakeLock();
+});
+window.addEventListener('pageshow',requestScreenWakeLock);
+window.addEventListener('pagehide',releaseScreenWakeLock);
+
+function ensureLoop(){getAudio();requestScreenWakeLock();if(!loop)loop=setInterval(tick,1000)}
+function tick(){
+ const wasRunning=timers.some(t=>t.running);
+ timers.forEach(t=>{if(!t.running)return;t.remaining--;if(t.remaining<=0){playSound(t.sound);if(t.repeat)t.remaining=Math.max(1,t.min*60+t.sec);else t.running=false}});
+ if(wasRunning){
+   const timePractice=counters.find(isTimePractice);
+   addPracticeSecond(timePractice);
+   saveData();
+   renderCalendar();
+ }
+ render();
+ if(!timers.some(t=>t.running)){clearInterval(loop);loop=null;$('#startAll').classList.remove('running');releaseScreenWakeLock()}
+}
 function beginTimer(t){t.remaining=Math.max(1,(Number(t.min)||0)*60+(Number(t.sec)||0));t.running=true;ensureLoop();render()}
 function beginCounter(c){if(c.target<=0)return;c.current=0;c.running=true;ensureLoop();render()}
 function startAllTimers(){unlockAudio();timers.forEach(t=>{if(!t.running){t.remaining=Math.max(1,(Number(t.min)||0)*60+(Number(t.sec)||0));t.running=true}});ensureLoop();$('#startAll').classList.add('running')}
@@ -331,5 +365,31 @@ $('#startAll').onclick=()=>{unlockAudio();startAllTimers()};$('#stopAll').onclic
   .counter-row{grid-template-columns:minmax(0,1fr) 28px 26px 32px 26px 28px 25px!important;gap:2px!important}
   .counter-info .counter-name{font-size:11px}
   .counter-row .step-ten{font-size:10px}
+}
+</style>
+
+<style>
+/* Practice calendar lotus legend and marks */
+.legend{display:flex;flex-direction:column;gap:6px}
+.legend>div{display:flex;align-items:center;gap:8px}
+.legend-lotus{width:23px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.legend-lotus.blue,.lotus-mark.blue{color:#86a9c9}
+.legend-lotus.purple,.lotus-mark.purple{color:#c8b8dc}
+.legend-lotus.pink,.lotus-mark.pink{color:#e8aebc}
+.lotus-mark{height:20px;display:flex;align-items:center;justify-content:center}
+.lotus-mark svg{width:22px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lotus-mark.blue{color:#86a9c9}.lotus-mark.purple{color:#c8b8dc}.lotus-mark.pink{color:#e8aebc}
+/* Match Daily Practice button outlines to Time controls */
+.counter-row .step{border:1px solid var(--olive)!important;box-shadow:none!important}
+/* Typography +4pt from the preceding layout */
+.counter-info .counter-name{font-size:20.33px!important}
+.counter-info .practice-goal{font-size:16.33px!important}
+@media(max-width:700px){
+ .counter-info .counter-name{font-size:18.33px!important}
+ .counter-info .practice-goal{font-size:15.33px!important}
+}
+@media(max-width:360px){
+ .counter-info .counter-name{font-size:16.33px!important}
+ .counter-info .practice-goal{font-size:14.33px!important}
 }
 </style>
